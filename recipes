@@ -1,0 +1,25 @@
+iron_ore = 30
+copper_ore = 30
+coal = 60
+limestone = 45
+
+iron_ingots = iron_ore : 30
+copper_ingots = copper_ore : 30
+concrete = 3 limestone : 15
+steel_ingots = 3 coal + 3 iron_ore : 15
+
+iron_rods = iron_ingots : 30
+iron_plates = 2 iron_ingots > 3 : 15
+screws = iron_rods > 4 : 30
+
+copper_wire = copper_ingots > 2 : 30
+copper_sheets = copper_ingots > 2 : 30
+
+steel_beams = 3 steel_ingots > 2 : 15
+steel_tubes = steel_ingots + iron_rods > iron_rods : 15
+
+pipes = steel_tubes + 2 copper_sheets : 15
+encased_steel_beams = steel_beams + concrete : 10
+reinforced_iron_plates = 3 iron_plates + 8 screws : 15
+
+coal : 15
