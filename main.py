@@ -1,4 +1,4 @@
-from math import floor, ceil
+from math import floor
 import time
 
 
@@ -55,7 +55,7 @@ class inven:
 
     def __mul__(self, other):
         return inven({key: int(self[key] * floor(other)) for key in self})
-    
+
     def __truediv__(self, other):
         i = min(self[i] // other[i] for i in other)
         new = self - (other * i)
@@ -75,10 +75,10 @@ class inven:
 
     def __imul__(self, other):
         return self(self * other)
-    
+
     def __eq__(self, other):
-        return min(map(lambda key:self[key] == other[key], {*self, *other}))
-    
+        return min(map(lambda key: self[key] == other[key], {*self, *other}))
+
     def __gt__(self, other):
         return other.trim(self) == other
 
@@ -100,6 +100,7 @@ class inven:
     def trim(self, other):
         match = inven({key: min(self[key], other[key]) for key in {*self, *other}})
         return inven((self - match).list()[:int(other["all"] - match["all"])]) + match
+
 
 def process(txt):
     if "#" in txt:
@@ -156,6 +157,7 @@ def make_property(getter):
             del self._props[getter.__name__]
         except KeyError:
             pass
+
     return prop
 
 
@@ -169,22 +171,22 @@ class builds:
         self.name, self.inven, self.out_names = name, inven(inventory), outs
         self.in_names, self.stored, self.will_get = set(), inven(), inven()
         self.flags = {"inputs": 1, "outputs": 1, "sender": "stored", "receiver": "will_get",
-        "delete":(), "preserve":(), **flags}
+                      "delete": (), "preserve": (), **flags}
         self._props, self.delete = {}, {"can_get", "can_send", *set(self.flags["delete"])} - set(self.flags["preserve"])
         self.sender = getattr(self, self.flags["sender"])
         self.receiver = getattr(self, self.flags["receiver"])
         builds.all[self.name] = self
-    
+
     def __repr__(self):
         return self.name
-    
+
     @classmethod
     def connect(cls, sender, receiver):
         del sender.outs, receiver.ins
         sender.out_names.add(receiver)
-        map(delattr, cls.all.values(), ["level"]*len(cls.all))
+        map(delattr, cls.all.values(), ["level"] * len(cls.all))
         cls.levels = None
-    
+
     @classmethod
     def reset_all(cls):
         for build in cls.all.values():
@@ -214,7 +216,7 @@ class builds:
 
     @make_property
     def level(self):
-        return max(map(lambda x:x.level, self.ins)) + 1 if self.ins else 0
+        return max(map(lambda x: x.level, self.ins)) + 1 if self.ins else 0
 
     def get(self, items):
         self.receiver += self.can_get.pop(items)
@@ -252,7 +254,8 @@ class actors(builds):
 
     def __init__(self, name, recipe, *outs, speed=None, **flags):
         self.recipe, self.rate, self._speeds = recipe, recipe["rate"], recipe["def_speed"] if speed is None else speed
-        if type(self._speeds) is not list: self._speeds = [self._speeds]
+        if type(self._speeds) is not list:
+            self._speeds = [self._speeds]
         self.outven, self.prod, self.progress = inven(self.recipe["outs"]), inven(), 0
         super().__init__(name, self.recipe["ins"], *outs, sender="prod", receiver="stored", delete={"can_act"}, **flags)
         actors.all.append(self)
@@ -268,7 +271,7 @@ class actors(builds):
     @make_property
     def can_get(self):
         return (self.inven * self.can_act) - self.stored
-    
+
     def send(self):
         self.act()
         super().send()
@@ -277,7 +280,7 @@ class actors(builds):
         amount = [self.can_act]
         if self.inven:
             amount.append(self.stored / self.inven)
-        amount = floor(max(min(amount),0))
+        amount = floor(max(min(amount), 0))
         self.stored -= self.inven * amount
         self.prod += self.outven * amount
         self.progress -= amount
@@ -294,7 +297,7 @@ class actors(builds):
     @property
     def speeds(self):
         return self._speeds
-    
+
     @speeds.setter
     def speeds(self, value):
         self._speeds = [value]
@@ -352,13 +355,13 @@ recipe_build("steel_tube_crafter", "steel_tubes", "pipe_crafter", "screw_crafter
 recipe_build("pipe_crafter", "pipes", "merger", speed=30)
 
 passer("merger", "storage")
-storage_build=storage("storage", 9999)
+storage_build = storage("storage", 9999)
 
-start=time.time()
+start = time.time()
 
 while True:
     builds.reset_all()
-    print(storage_build, time.time()-start, sep="\n")
+    print(storage_build, time.time() - start, sep="\n")
     if input():
         break
     start = time.time()
