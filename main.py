@@ -1,5 +1,4 @@
 from math import floor
-import time
 
 
 class inven:
@@ -357,14 +356,11 @@ recipe_build("pipe_crafter", "pipes", "merger", speed=30)
 passer("merger", "storage")
 storage_build = storage("storage", 9999)
 
-start = time.time()
-
 while True:
     builds.reset_all()
-    print(storage_build, time.time() - start, sep="\n")
+    print(storage_build, sep="\n")
     if input():
         break
-    start = time.time()
     for level in builds.levels:
         for build in level:
             build.send()
