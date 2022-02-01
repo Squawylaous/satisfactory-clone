@@ -104,8 +104,8 @@ class inven:
 def process(txt):
     if "#" in txt:
         txt = txt[:txt.index("#")]
+    recipe = {"name": "", "making": "", "type": "basic", "rate": 0, "def_speed": 0, "ins": {}, "outs": {}}
     txt = txt.strip()
-    recipe = {"name": "", "type": "basic", "rate": 0, "def_speed": 0, "ins": {}, "outs": {}}
     if txt:
         if "=" not in txt:
             txt = txt.replace(" ", "").split(":")
@@ -114,12 +114,17 @@ def process(txt):
             recipe["def_speed"], recipe["ins"][txt[0]] = float(txt[1][1 if "," in txt[1] else 0]), recipe["rate"]
         else:
             txt = txt.split("=")
-            recipe["name"] = txt[0].strip()
+            if "!" in txt[0]:
+                txt[0] = txt[0].split("!")
+                recipe["name"], txt[0] = txt[0][0].strip(), txt[0][1]
+            else:
+                recipe["name"] = txt[0].strip()
+            recipe["making"] = txt[0].strip()
             txt = txt[1].split(":") if ":" in txt[1] else ["", txt[1]]
             txt[1] = txt[1].split(",")
             recipe["rate"], recipe["def_speed"] = float(txt[1][0]), float(txt[1][1 if "," in txt[1] else 0])
             txt = txt[0].strip()
-            txt = txt.split(">") if ">" in txt else [txt, recipe["name"]]
+            txt = txt.split(">") if ">" in txt else [txt, recipe["making"]]
             if txt[0]:
                 recipe["type"] = "constructor"
                 for arg in txt[0].split("+"):
@@ -127,10 +132,10 @@ def process(txt):
                     recipe["ins"][arg[-1]] = float(arg[0]) if len(arg) > 1 else 1
             else:
                 recipe["type"] = "extractor"
-            if recipe["name"] not in txt[1]:
+            if recipe["making"] not in txt[1]:
                 if txt[1][-1] not in "0123456789":
                     txt[1] += " +"
-                txt[1] += " " + recipe["name"]
+                txt[1] += " " + recipe["making"]
             for arg in txt[1].split("+"):
                 arg = arg.strip().split(" ")
                 recipe["outs"][arg[-1]] = float(arg[0]) if len(arg) > 1 else 1
