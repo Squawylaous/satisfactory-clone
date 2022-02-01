@@ -333,20 +333,16 @@ def recipe_build(name, recipe, *outs, **kwargs):
     return globals()[recipe["type"]](name, recipe, *outs, **kwargs)
 
 
-recipe_build("iron_miner", "iron_ore", "iron_ore_splitter", speed=[120, 135, 90])
-passer("iron_ore_splitter", "iron_smelter", "steel_foundry")
+recipe_build("iron_miner", "iron_ore", "iron_smelter", "steel_foundry", speed=[120, 135, 90])
 recipe_build("coal_miner", "coal", "steel_foundry", speed=[135, 90])
 recipe_build("limestone_miner", "limestone", "concrete_crafter", speed=90)
-recipe_build("iron_smelter", "iron_ingots", "iron_splitter", speed=120)
-passer("iron_splitter", "rod_crafter", "plate_crafter")
-recipe_build("steel_foundry", "steel_ingots", "steel_splitter", speed=[45, 30])
-passer("steel_splitter", "steel_beam_crafter", "steel_tube_crafter")
+recipe_build("iron_smelter", "iron_ingots", "rod_crafter", "plate_crafter", speed=120)
+recipe_build("steel_foundry", "steel_ingots", "steel_beam_crafter", "steel_tube_crafter", speed=[45, 30])
 recipe_build("copper_miner", "copper_ore", "copper_smelter")
 recipe_build("copper_smelter", "copper_ingots", "copper_sheet_crafter")
 
 recipe_build("plate_crafter", "iron_plates", "reinforced_plate_crafter", speed=90)
-recipe_build("rod_crafter", "iron_rods", "rod_splitter", speed=60)
-passer("rod_splitter", "steel_tube_crafter", "screw_crafter")
+recipe_build("rod_crafter", "iron_rods", "steel_tube_crafter", "screw_crafter", speed=60)
 recipe_build("screw_crafter", "screws", "reinforced_plate_crafter", speed=60)
 recipe_build("reinforced_plate_crafter", "reinforced_iron_plates", "merger", speed=30)
 
