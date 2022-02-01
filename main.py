@@ -235,22 +235,16 @@ class builds:
             delattr(self, prop)
 
 
-class passer(builds):
-    def __init__(self, name, *outs, inventory=0, **flags):
+class storage(builds):
+    def __init__(self, name, inventory=0, *outs, **flags):
         super().__init__(name, {"all": inventory}, *outs, receiver="sender", **flags)
 
-    def __str__(self): return self.name
+    def __str__(self): return " ".join([self.name, "(", str(self.stored), ":", str(self.stored.sum), "/", str(
+        self.inven.sum), ")"])
 
     @make_property
     def can_get(self):
         return self.inven - self.stored + sum([out.can_get for out in self.outs], inven())
-
-
-class storage(passer):
-    def __init__(self, name, inventory, *outs, **flags): super().__init__(name, inventory=inventory, *outs, **flags)
-
-    def __str__(self): return " ".join([self.name, "(", str(self.stored), ":", str(self.stored.sum), "/", str(
-        self.inven.sum), ")"])
 
 
 class actors(builds):
@@ -344,18 +338,20 @@ recipe_build("copper_smelter", "copper_ingots", "copper_sheet_crafter")
 recipe_build("plate_crafter", "iron_plates", "reinforced_plate_crafter", speed=90)
 recipe_build("rod_crafter", "iron_rods", "steel_tube_crafter", "screw_crafter", speed=60)
 recipe_build("screw_crafter", "screws", "reinforced_plate_crafter", speed=60)
-recipe_build("reinforced_plate_crafter", "reinforced_iron_plates", "merger", speed=30)
+recipe_build("reinforced_plate_crafter", "reinforced_iron_plates", "storage", speed=30)
 
 recipe_build("steel_beam_crafter", "steel_beams", "encased_steel_beam_crafter")
 recipe_build("concrete_crafter", "concrete", "encased_steel_beam_crafter", speed=30)
-recipe_build("encased_steel_beam_crafter", "encased_steel_beams", "merger", speed=30)
+recipe_build("encased_steel_beam_crafter", "encased_steel_beams", "storage", speed=30)
 
 recipe_build("copper_sheet_crafter", "copper_sheets", "pipe_crafter")
 recipe_build("steel_tube_crafter", "steel_tubes", "pipe_crafter", "screw_crafter", speed=30)
-recipe_build("pipe_crafter", "pipes", "merger", speed=30)
+recipe_build("pipe_crafter", "pipes", "storage", speed=30)
 
-passer("merger", "storage")
 storage_build = storage("storage", 9999)
+
+level_pos = [[]]
+from functools import reduce
 
 while True:
     builds.reset_all()
@@ -365,3 +361,16 @@ while True:
     for level in builds.levels:
         for build in level:
             build.send()
+    for level in builds.levels:
+        for i in range(len(level)):
+            level[i].level_pos = sum(map(lambda x: x.level_pos, level[i].ins)) / len(level[i].ins) if level[i].ins else i
+    all_level_pos = []
+    for level in builds.levels:
+        gcd = reduce(lambda x, p:x % p if x else p, sorted(map(lambda x:x.level_pos, level)))
+        for build in level:
+            build.level_pos = int(build.level_pos // gcd)
+        level_pos = sorted(map(lambda x:x.level_pos, level))
+        level_pos = {i: level_pos.count(i) for i in level_pos}
+        all_level_pos.append(level_pos)
+        print([*map(lambda x:x.level_pos, level)])
+    print(*all_level_pos, sep="\n")
