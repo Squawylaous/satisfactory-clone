@@ -2,24 +2,33 @@ iron_ore = 30
 copper_ore = 30
 coal = 60
 limestone = 45
-
+oil = 60
 iron_ingots = iron_ore : 30
 copper_ingots = copper_ore : 30
 concrete = 3 limestone : 15
 steel_ingots = 3 coal + 3 iron_ore : 15
-
+plastic = 3 oil > residue + 2 : 10
+rubber = 3 oil > 2 residue : 10
+fuel = 6 oil > 3 residue + 4 : 5
+residue = oil > 2 : 60, 30
 iron_rods = iron_ingots : 30
 iron_plates = 2 iron_ingots > 3 : 15
 screws = iron_rods > 4 : 30
-
+reinforced_iron_plates = 3 iron_plates + 8 screws : 15
+modular_frame = 4 iron_rods + 2 reinforced_iron_plates : 7.5
 copper_wire = copper_ingots > 2 : 30
 copper_sheets = copper_ingots > 2 : 30
-
 steel_beams = 3 steel_ingots > 2 : 15
 steel_tubes = steel_ingots + iron_rods > iron_rods : 15
-
 pipes = steel_tubes + 2 copper_sheets : 15
 encased_steel_beams = steel_beams + concrete : 10
-reinforced_iron_plates = 3 iron_plates + 8 screws : 15
-
-coal : 15
+cable = 2 copper_wire + rubber : 30
+magnets = 2 copper_wire + iron_rods > copper_wire : 5, 30
+curcit_boards = 3 cable + 2 plastic > 2 : 10
+motors = 2 magnets + reinforced_iron_plates : 15
+tires = 3 iron_plates + 8 screws + 2 rubber : 10, 15
+residual_plastic ! plastic = 2 residue : 15
+residual_rubber ! rubber = 2 residue : 15
+residual_fuel ! fuel = 3 residue > 2 : 10
+coal : 5, 15
+fuel : 2.5, 15
