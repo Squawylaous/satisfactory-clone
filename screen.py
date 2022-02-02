@@ -25,7 +25,8 @@ def getattrs(iter_, attr):
 class sprites:
     all = {}
     levels = []
-    size = 45
+    size = 75
+    column_size = 1.5
 
     def __init__(self, build):
         self.build, self.name, self.level = build, build.name, None
@@ -54,8 +55,33 @@ class sprites:
                 cls.levels[sprite.level].append(sprite)
             for level in cls.levels:
                 for i in range(len(level)):
-                    level[i].rect.center = (screen_rect.centerx + sprites.size * 1.5 * (2 * i - (len(level) - 1)),
-                                            screen_rect.bottom - (level[i].level + 0.5) * 2 * sprites.size)
+                    level[i].level_pos = sum(map(lambda x: x.level_pos, level[i].ins)) / len(level[i].ins) if\
+                        level[i].ins else (screen_rect.w // sprites.size / len(level))*(i - (len(level) - 1)/2)
+            for level in cls.levels:
+                level_pos = sorted({*map(lambda x: x.level_pos, level)})
+                temp_level_pos = {}
+                for i in range(len(level_pos)):
+                    lvl = [-1, [*map(lambda x: x.level_pos, level)].count(level_pos[i]),
+                           [screen_rect.w // sprites.size / len(level)]]
+                    temp_level_pos[level_pos[i]] = lvl
+                    if i != len(level_pos) - 1:
+                        lvl[2].append(level_pos[i + 1] - level_pos[i])
+                    if i:
+                        lvl[2].append(level_pos[i] - level_pos[i - 1])
+                    lvl[2] = min(lvl[2]) / lvl[1]
+                level_pos = temp_level_pos
+                for sprite in level:
+                    level_pos[sprite.level_pos][0] += 1
+                    sprite.level_pos += level_pos[sprite.level_pos][2] * (
+                            level_pos[sprite.level_pos][0] - (level_pos[sprite.level_pos][1] - 1)/2)
+            for level in cls.levels:
+                for sprite in level:
+                    sprite.rect.center = vector(screen_rect.midbottom) + (
+                            sprites.size * vector(sprite.level_pos, -(sprite.level + 0.5) * sprites.column_size))
+
+    @property
+    def ins(self):
+        return [*map(lambda x: sprites.all[x], self.build.in_names)]
 
     def update(self):
         self.draw()
@@ -85,37 +111,12 @@ class sprites:
         pass
 
 
-sprites(logic.recipe_build("iron_miner", "iron_ore", "iron_ore_splitter", speed=[120, 135, 90]))
-sprites(logic.passer("iron_ore_splitter", "iron_smelter", "steel_foundry"))
-sprites(logic.recipe_build("coal_miner", "coal", "steel_foundry", speed=[135, 90]))
-sprites(logic.recipe_build("limestone_miner", "limestone", "concrete_crafter", speed=90))
-sprites(logic.recipe_build("iron_smelter", "iron_ingots", "iron_splitter", speed=120))
-sprites(logic.passer("iron_splitter", "rod_crafter", "plate_crafter"))
-sprites(logic.recipe_build("steel_foundry", "steel_ingots", "steel_splitter", speed=[45, 30]))
-sprites(logic.passer("steel_splitter", "steel_beam_crafter", "steel_tube_crafter"))
-sprites(logic.recipe_build("copper_miner", "copper_ore", "copper_smelter"))
-sprites(logic.recipe_build("copper_smelter", "copper_ingots", "copper_sheet_crafter"))
+def recipe_build(name, recipe, *outs, **kwargs):
+    recipe = logic.recipes[recipe]
+    return sprites(logic.__dict__[recipe["type"]](name, recipe, *outs, **kwargs))
 
-sprites(logic.recipe_build("plate_crafter", "iron_plates", "reinforced_plate_crafter", speed=90))
-sprites(logic.recipe_build("rod_crafter", "iron_rods", "rod_splitter", speed=60))
-sprites(logic.passer("rod_splitter", "steel_tube_crafter", "screw_crafter"))
-sprites(logic.recipe_build("screw_crafter", "screws", "reinforced_plate_crafter", speed=60))
-sprites(logic.recipe_build("reinforced_plate_crafter", "reinforced_iron_plates", "merger", speed=30))
 
-sprites(logic.recipe_build("steel_beam_crafter", "steel_beams", "encased_steel_beam_crafter"))
-sprites(logic.recipe_build("concrete_crafter", "concrete", "encased_steel_beam_crafter", speed=30))
-sprites(logic.recipe_build("encased_steel_beam_crafter", "encased_steel_beams", "merger", speed=30))
-
-sprites(logic.recipe_build("copper_sheet_crafter", "copper_sheets", "pipe_crafter"))
-sprites(logic.recipe_build("steel_tube_crafter", "steel_tubes", "pipe_crafter", "screw_crafter", speed=30))
-sprites(logic.recipe_build("pipe_crafter", "pipes", "merger", speed=30))
-
-sprites(logic.passer("merger", "storage"))
-sprites(logic.storage("storage", 9999))
-
-sprites.reset_all()
-
-"""recipe_build("iron_miner", "iron_ore", "iron_smelter", "steel_foundry", speed=[120, 135, 90])
+recipe_build("iron_miner", "iron_ore", "iron_smelter", "steel_foundry", speed=[120, 135, 90])
 recipe_build("coal_miner", "coal", "steel_foundry", speed=[135, 90])
 recipe_build("limestone_miner", "limestone", "concrete_crafter", speed=90)
 recipe_build("iron_smelter", "iron_ingots", "rod_crafter", "plate_crafter", speed=120)
@@ -136,12 +137,11 @@ recipe_build("copper_sheet_crafter", "copper_sheets", "pipe_crafter")
 recipe_build("steel_tube_crafter", "steel_tubes", "pipe_crafter", "screw_crafter", speed=30)
 recipe_build("pipe_crafter", "pipes", "storage", speed=30)
 
-storage_build = storage("storage", 9999)
+sprites(logic.storage("storage", 9999))
 
-level_pos = [[]]
-from functools import reduce
+sprites.reset_all()
 
-while True:
+"""while True:
     builds.reset_all()
     print(storage_build, sep="\n")
     if input():
@@ -149,22 +149,6 @@ while True:
     for level in builds.levels:
         for build in level:
             build.send()"""
-
-"""while True:
-    for level in builds.levels:
-        for i in range(len(level)):
-            level[i].level_pos = sum(map(lambda x: x.level_pos, level[i].ins)) / len(level[i].ins) if level[i].ins else i
-    all_level_pos = []
-    for level in builds.levels:
-        gcd = reduce(lambda x, p:x % p if x else p, sorted(map(lambda x:x.level_pos, level)))
-        for build in level:
-            build.level_pos = int(build.level_pos // gcd)
-        level_pos = sorted(map(lambda x:x.level_pos, level))
-        level_pos = {i: level_pos.count(i) for i in level_pos}
-        all_level_pos.append(level_pos)
-        print([*map(lambda x:x.level_pos, level)])
-    print(*all_level_pos, sep="\n")"""
-
 
 while True:
     user_inputs.check()
@@ -190,8 +174,8 @@ while True:
         connect(*user_inputs.selected)
 
     screen.fill(background)
-    for i in range(screen_rect.bottom, -1, -sprites.size * 4):
-        pygame.draw.rect(screen, (64, 64, 64), (screen_rect.left, i, screen_rect.w, sprites.size * 2))
+    for i in range(screen_rect.bottom, -1, -int(sprites.size * 2 * sprites.column_size)):
+        pygame.draw.rect(screen, (64, 64, 64), (screen_rect.left, i, screen_rect.w, sprites.size * sprites.column_size))
     for sender, reciever in connections:
         pygame.draw.line(screen, (255, 255, 255), sender.center, reciever.center)
     if "connecting" in user_inputs.doing:
