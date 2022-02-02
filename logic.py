@@ -181,8 +181,8 @@ class builds:
         self.receiver = getattr(self, self.flags["receiver"])
         builds.all[self.name] = self
 
-    def __repr__(self):
-        return self.name
+    def __str__(self):
+        return self.name.title().replace("_", " ")
 
     @classmethod
     def connect(cls, sender, receiver):
@@ -239,8 +239,11 @@ class storage(builds):
     def __init__(self, name, inventory=0, *outs, **flags):
         super().__init__(name, {"all": inventory}, *outs, receiver="sender", **flags)
 
-    def __str__(self): return " ".join([self.name, "(", str(self.stored), ":", str(self.stored.sum), "/", str(
+    def __repr__(self): return " ".join([self.name, "(", str(self.stored), ":", str(self.stored.sum), "/", str(
         self.inven.sum), ")"])
+
+    def __str__(self):
+        return " ".join([super().__str__() + ":", str(self.stored.sum), "/", str(self.inven.sum)])
 
     @make_property
     def can_get(self):
@@ -257,6 +260,9 @@ class actors(builds):
         self.outven, self.prod, self.progress = inven(self.recipe["outs"]), inven(), 0
         super().__init__(name, self.recipe["ins"], *outs, sender="prod", receiver="stored", delete={"can_act"}, **flags)
         actors.all.append(self)
+
+    def __str__(self):
+        return " ".join([super().__str__(), "x", str(round(self.speed, 2) if self.speed % 1 else int(self.speed))])
 
     @make_property
     def can_act(self):
@@ -305,13 +311,13 @@ class actors(builds):
 class extractor(actors):
     __init__ = actors.__init__
 
-    def __str__(self): return " ".join([self.name, "(", str(self.prod), "/", str(self.outven), ")"])
+    def __repr__(self): return " ".join([self.name, "(", str(self.prod), "/", str(self.outven), ")"])
 
 
 class constructor(actors):
     __init__ = actors.__init__
 
-    def __str__(self):
+    def __repr__(self):
         return " ".join([self.name, "(", str(self.stored), "/", str(self.inven), ">", str(self.prod), "/", str(
             self.outven), ")"])
 
@@ -319,58 +325,4 @@ class constructor(actors):
 class consumer(actors):
     __init__ = actors.__init__
 
-    def __str__(self): return " ".join([self.name, "(", str(self.stored), "/", str(self.inven), ")"])
-
-
-def recipe_build(name, recipe, *outs, **kwargs):
-    recipe = recipes[recipe]
-    return globals()[recipe["type"]](name, recipe, *outs, **kwargs)
-
-
-recipe_build("iron_miner", "iron_ore", "iron_smelter", "steel_foundry", speed=[120, 135, 90])
-recipe_build("coal_miner", "coal", "steel_foundry", speed=[135, 90])
-recipe_build("limestone_miner", "limestone", "concrete_crafter", speed=90)
-recipe_build("iron_smelter", "iron_ingots", "rod_crafter", "plate_crafter", speed=120)
-recipe_build("steel_foundry", "steel_ingots", "steel_beam_crafter", "steel_tube_crafter", speed=[45, 30])
-recipe_build("copper_miner", "copper_ore", "copper_smelter")
-recipe_build("copper_smelter", "copper_ingots", "copper_sheet_crafter")
-
-recipe_build("plate_crafter", "iron_plates", "reinforced_plate_crafter", speed=90)
-recipe_build("rod_crafter", "iron_rods", "steel_tube_crafter", "screw_crafter", speed=60)
-recipe_build("screw_crafter", "screws", "reinforced_plate_crafter", speed=60)
-recipe_build("reinforced_plate_crafter", "reinforced_iron_plates", "storage", speed=30)
-
-recipe_build("steel_beam_crafter", "steel_beams", "encased_steel_beam_crafter")
-recipe_build("concrete_crafter", "concrete", "encased_steel_beam_crafter", speed=30)
-recipe_build("encased_steel_beam_crafter", "encased_steel_beams", "storage", speed=30)
-
-recipe_build("copper_sheet_crafter", "copper_sheets", "pipe_crafter")
-recipe_build("steel_tube_crafter", "steel_tubes", "pipe_crafter", "screw_crafter", speed=30)
-recipe_build("pipe_crafter", "pipes", "storage", speed=30)
-
-storage_build = storage("storage", 9999)
-
-level_pos = [[]]
-from functools import reduce
-
-while True:
-    builds.reset_all()
-    print(storage_build, sep="\n")
-    if input():
-        break
-    for level in builds.levels:
-        for build in level:
-            build.send()
-    for level in builds.levels:
-        for i in range(len(level)):
-            level[i].level_pos = sum(map(lambda x: x.level_pos, level[i].ins)) / len(level[i].ins) if level[i].ins else i
-    all_level_pos = []
-    for level in builds.levels:
-        gcd = reduce(lambda x, p:x % p if x else p, sorted(map(lambda x:x.level_pos, level)))
-        for build in level:
-            build.level_pos = int(build.level_pos // gcd)
-        level_pos = sorted(map(lambda x:x.level_pos, level))
-        level_pos = {i: level_pos.count(i) for i in level_pos}
-        all_level_pos.append(level_pos)
-        print([*map(lambda x:x.level_pos, level)])
-    print(*all_level_pos, sep="\n")
+    def __repr__(self): return " ".join([self.name, "(", str(self.stored), "/", str(self.inven), ")"])
