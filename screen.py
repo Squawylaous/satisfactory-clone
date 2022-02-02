@@ -12,6 +12,8 @@ screen_rect = screen.get_rect()
 screen.fill(background)
 connections = set()
 
+antialiasing = True
+
 
 def connect(sender, reciever):
     if sender is not reciever:
@@ -25,15 +27,20 @@ def getattrs(iter_, attr):
 class sprites:
     all = {}
     levels = []
-    size = 75
+    size = 100
+    size = vector(1.25 * size, size)
     column_size = 1.5
+    font = pygame.font.SysFont("Comic Sans MS", int(size.y/5))
 
     def __init__(self, build):
-        self.build, self.name, self.level = build, build.name, None
-        self.rect = pygame.rect.Rect(screen_rect.centerx, screen_rect.bottom - 1.5 * sprites.size,
-                                     sprites.size, sprites.size)
+        self.build, self.name = build, build.name
+        self.rect = pygame.rect.Rect((screen_rect.centerx, screen_rect.bottom - 1.5 * sprites.size.y), sprites.size)
         self.clicked_at, self.prev_rect = vector(), self.rect.copy()
+        self._text, self.level = None, None
         sprites.all[self.name] = self
+
+    def __str__(self):
+        return str(self.build)
 
     def __getattr__(self, key):
         return getattr(self.rect, key)
@@ -43,6 +50,7 @@ class sprites:
         if logic.builds.levels is None:
             for sprite in cls.all.values():
                 sprite.level = None
+                sprite._text = None
             cls.levels = None
         logic.builds.reset_all()
         for sprite in cls.all.values():
@@ -53,16 +61,19 @@ class sprites:
             for sprite in cls.all.values():
                 sprite.level = sprite.build.level
                 cls.levels[sprite.level].append(sprite)
-            for level in cls.levels:
+            out_counts = [*map(lambda x:len(set(x.out_count)), cls.levels[0])]
+            for i in range(len(cls.levels[0])):
+                cls.levels[0][i].level_pos = (sum(out_counts[:i]) + out_counts[i]/2 - (
+                        sum(out_counts) - 1) / 2) * (screen_rect.w // sprites.size.x / sum(out_counts))
+            for level in cls.levels[1:]:
                 for i in range(len(level)):
-                    level[i].level_pos = sum(map(lambda x: x.level_pos, level[i].ins)) / len(level[i].ins) if\
-                        level[i].ins else (screen_rect.w // sprites.size / len(level))*(i - (len(level) - 1)/2)
+                    level[i].level_pos = sum(getattrs(level[i].ins, "level_pos")) / len(level[i].ins)
             for level in cls.levels:
-                level_pos = sorted({*map(lambda x: x.level_pos, level)})
+                level_pos = sorted({*getattrs(level, "level_pos")})
                 temp_level_pos = {}
                 for i in range(len(level_pos)):
-                    lvl = [-1, [*map(lambda x: x.level_pos, level)].count(level_pos[i]),
-                           [screen_rect.w // sprites.size / len(level)]]
+                    lvl = [-1, getattrs(level, "level_pos").count(level_pos[i]),
+                           [screen_rect.w // sprites.size.x / len(level)]]
                     temp_level_pos[level_pos[i]] = lvl
                     if i != len(level_pos) - 1:
                         lvl[2].append(level_pos[i + 1] - level_pos[i])
@@ -76,12 +87,29 @@ class sprites:
                             level_pos[sprite.level_pos][0] - (level_pos[sprite.level_pos][1] - 1)/2)
             for level in cls.levels:
                 for sprite in level:
-                    sprite.rect.center = vector(screen_rect.midbottom) + (
-                            sprites.size * vector(sprite.level_pos, -(sprite.level + 0.5) * sprites.column_size))
+                    sprite.rect.center = vector(screen_rect.midbottom) + (sprites.size.elementwise() * vector(
+                        sprite.level_pos, -(sprite.level + 0.5) * sprites.column_size))
 
     @property
     def ins(self):
         return [*map(lambda x: sprites.all[x], self.build.in_names)]
+
+    @property
+    def out_count(self):
+        return sum(map(lambda x: sprites.all[x].out_count, self.build.out_names), self.build.out_names)
+
+    @property
+    def text(self):
+        if self._text is None:
+            text_list = self.name.title().split("_")
+            self._text = [""]
+            for word in text_list:
+                new_word = " ".join([self._text[-1], word]).strip()
+                if sprites.font.size(new_word)[0] < sprites.size.x - 15:
+                    self._text[-1] = new_word
+                else:
+                    self._text.append(word)
+        return self._text
 
     def update(self):
         self.draw()
@@ -89,6 +117,10 @@ class sprites:
 
     def draw(self):
         pygame.draw.rect(screen, (128, 128, 128), self.rect)
+        y_off = 0
+        for line in self.text:
+            screen.blit(sprites.font.render(line, antialiasing, (255, 255, 255)), self.topleft + vector(7.5, y_off))
+            y_off += sprites.font.size(line)[1]
 
     def move_to(self, pos):
         pos += self.clicked_at
@@ -137,18 +169,10 @@ recipe_build("copper_sheet_crafter", "copper_sheets", "pipe_crafter")
 recipe_build("steel_tube_crafter", "steel_tubes", "pipe_crafter", "screw_crafter", speed=30)
 recipe_build("pipe_crafter", "pipes", "storage", speed=30)
 
-sprites(logic.storage("storage", 9999))
+storage_build = sprites(logic.storage("storage", 9999))
 
 sprites.reset_all()
-
-"""while True:
-    builds.reset_all()
-    print(storage_build, sep="\n")
-    if input():
-        break
-    for level in builds.levels:
-        for build in level:
-            build.send()"""
+print(storage_build)
 
 while True:
     user_inputs.check()
@@ -156,7 +180,9 @@ while True:
         break
     for event in pygame.event.get():
         if event.type == KEYDOWN:
-            if event.key == K_ESCAPE:
+            if event.key == K_SPACE or event.key == K_RETURN:
+                user_inputs.event("pass_time")
+            elif event.key == K_ESCAPE:
                 pygame.event.post(pygame.event.Event(QUIT))
         elif event.type == MOUSEBUTTONDOWN:
             if event.button == BUTTON_LEFT:
@@ -170,12 +196,21 @@ while True:
                 user_inputs.event("unclick")
         elif event.type == MOUSEMOTION:
             user_inputs.event("move_to", event.pos)
-    if user_inputs.do == "connect":
+
+    if "connect" in user_inputs.do:
         connect(*user_inputs.selected)
 
+    if "pass_time" in user_inputs.do:
+        logic.builds.reset_all()
+        for level in logic.builds.levels:
+            for build in level:
+                build.send()
+        print(storage_build)
+
     screen.fill(background)
-    for i in range(screen_rect.bottom, -1, -int(sprites.size * 2 * sprites.column_size)):
-        pygame.draw.rect(screen, (64, 64, 64), (screen_rect.left, i, screen_rect.w, sprites.size * sprites.column_size))
+    for i in range(screen_rect.bottom, -1, -int(sprites.size.y * 2 * sprites.column_size)):
+        pygame.draw.rect(screen, (64, 64, 64), (
+            screen_rect.left, i, screen_rect.w, sprites.size.y * sprites.column_size))
     for sender, reciever in connections:
         pygame.draw.line(screen, (255, 255, 255), sender.center, reciever.center)
     if "connecting" in user_inputs.doing:
