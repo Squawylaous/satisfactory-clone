@@ -28,7 +28,7 @@ class sprites:
     all = {}
     levels = []
     size = 100
-    size = vector(1.25 * size, size)
+    size = vector(1.5 * size, size)
     column_size = 1.5
     font = pygame.font.SysFont("Comic Sans MS", int(size.y/5))
 
@@ -101,7 +101,7 @@ class sprites:
     @property
     def text(self):
         if self._text is None:
-            text_list = self.name.title().split("_")
+            text_list = str(self.build).split(" ")
             self._text = [""]
             for word in text_list:
                 new_word = " ".join([self._text[-1], word]).strip()
